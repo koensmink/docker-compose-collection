@@ -7,3 +7,5 @@ services:
       - "${PORT}:8081"
     volumes:
       - ${DATAPATH}:/downloads
+    environment:
+      - YTDL_OPTIONS={"cookiefile":"/cookies/cookies.txt"}
