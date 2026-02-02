@@ -4,22 +4,23 @@ services:
     restart: unless-stopped
     image: bbilly1/tubearchivist
     ports:
-      - 8000:8000
+      - ${HOSTPORT}:8000
     volumes:
-      - media:/youtube
-      - cache:/cache
+      - ${MEDIA}/Archive/youtube:/youtube
+      - ${APPDATA}/tubearchivist/cache:/cache
     environment:
-      - ES_URL=http://archivist-es:9200
+      - ES_URL=http://archivist-es:9200     # needs protocol e.g. http and port
       - REDIS_CON=redis://archivist-redis:6379
-      - HOST_UID=1000
-      - HOST_GID=1000
-      - TA_HOST=http://tubearchivist.local:8000
-      - TA_USERNAME=
-      - TA_PASSWORD=             
-      - ELASTIC_PASSWORD=
-      - TZ=America/New_York
+      - HOST_UID=${PUID}
+      - HOST_GID=${PGID}
+      - TA_HOST=${HOSTURL}   # set your host name with protocol and port
+      - TA_PORT=${HOSTPORT}  # set your host name with protocol and port
+      - TA_USERNAME=${WEBUSER}              # your initial TA credentials
+      - TA_PASSWORD=${WEBPASSWORD}          # your initial TA credentials
+      - ELASTIC_PASSWORD=${ELAPASSWORD}     # set password for Elasticsearch
+      - TZ=${TZ}                            # set your time zone
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      test: ["CMD", "curl", "-f", "http://localhost:${HOSTPORT}/api/health"]
       interval: 2m
       timeout: 10s
       retries: 3
@@ -34,15 +35,15 @@ services:
     expose:
       - "6379"
     volumes:
-      - redis:/data
+      - ${APPDATA}/redis:/data
     depends_on:
       - archivist-es
   archivist-es:
-    image: bbilly1/tubearchivist-es
+    image: bbilly1/tubearchivist-es         # only for amd64, or use official es 8.18.0
     container_name: archivist-es
     restart: unless-stopped
     environment:
-      - "ELASTIC_PASSWORD="
+      - "ELASTIC_PASSWORD=${ELAPASSWORD}"       # matching Elasticsearch password
       - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
       - "xpack.security.enabled=true"
       - "discovery.type=single-node"
@@ -52,7 +53,7 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - es:/usr/share/elasticsearch/data
+      - ${APPDATA}/elasticsearch:/usr/share/elasticsearch/data    # check for permission error when using bind mount, see readme
     expose:
       - "9200"
 
