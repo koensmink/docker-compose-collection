@@ -1,0 +1,53 @@
+services:
+  influxdb:
+    image: influxdb:2.7
+    container_name: netflow_db
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=${DOCKER_INFLUXDB_INIT_MODE}
+      - DOCKER_INFLUXDB_INIT_USERNAME=${DOCKER_INFLUXDB_INIT_USERNAME}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${DOCKER_INFLUXDB_INIT_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${DOCKER_INFLUXDB_INIT_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${DOCKER_INFLUXDB_INIT_BUCKET}
+    networks:
+      - netflow_nw
+
+  goflow2:
+    image: netsampler/goflow2:latest
+    container_name: netflow_collector
+    ports:
+      - "2055:2055/udp" # Standaard NetFlow poort
+    command:
+      - "-format=influxdb"
+      - "-transport.file=stdout" # Voor debugging in logs
+      - "-transport.influxdb.url=http://influxdb:8086"
+      - "-transport.influxdb.org=my-org"
+      - "-transport.influxdb.bucket=netflow"
+      - "-transport.influxdb.token=YOUR_GENERATED_TOKEN"
+    depends_on:
+      - influxdb
+    networks:
+      - netflow_nw
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: netflow_viz
+    ports:
+      - "3003:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - influxdb
+    networks:
+      - netflow_nw
+
+networks:
+  netflow_nw:
+    driver: bridge
+
+volumes:
+  influxdb_data:
+  grafana_data:
