@@ -1,0 +1,27 @@
+version: '2.1'
+
+services:
+  mariadb:
+    image: 'docker.io/bitnami/mariadb:10.4'
+    ports:
+      - '3306:3306'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD}
+      - MARIADB_DATABASE=${MARIADB_DATABASE}
+      - MARIADB_USER=${MARIADB_USER}
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD}
+  privacyidea:
+    image: 'khalibre/privacyidea:dev'
+    ports:
+      - '61:80'
+    environment:
+      - DB_VENDOR=mariadb
+      - DB_NAME=privacyidea
+      - DB_HOST=mariadb
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SECRET_KEY=${SECRET_KEY}
+      - PI_PEPPER=${PI_PEPPER}
+      - PI_PAGE_TITLE=pivacyIDEA
+    depends_on:
+      - mariadb
