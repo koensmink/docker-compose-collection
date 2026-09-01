@@ -1,0 +1,48 @@
+services:
+  llama-cpp:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    container_name: llama-cpp
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    volumes:
+      - llama-hf-cache:/root/.cache/huggingface
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+
+    command:
+      - "-hf"
+      - "bartowski/NousResearch_Hermes-4-14B-GGUF:Q4_K_M"
+      - "--alias"
+      - "hermes-4-14b"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8080"
+      - "--ctx-size"
+      - "16384"
+      - "--n-gpu-layers"
+      - "99"
+      - "--flash-attn"
+      - "on"
+      - "--cache-type-k"
+      - "q8_0"
+      - "--cache-type-v"
+      - "q8_0"
+      - "--parallel"
+      - "1"
+      - "--jinja"
+
+volumes:
+  llama-hf-cache:
+    external: true
