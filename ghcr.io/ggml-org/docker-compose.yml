@@ -1,0 +1,84 @@
+services:
+  llama-cpp:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    container_name: llama-cpp
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    gpus: all
+    shm_size: "1gb"
+
+    volumes:
+      - llama-hf-cache:/root/.cache/llama.cpp
+
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8080"
+
+      - "-hf"
+      - "unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL"
+
+      - "--alias"
+      - "qwen3.5-9b"
+
+      - "--ctx-size"
+      - "131072"
+
+      - "--n-gpu-layers"
+      - "99"
+
+      - "--flash-attn"
+      - "on"
+
+      - "--cache-type-k"
+      - "q8_0"
+
+      - "--cache-type-v"
+      - "q8_0"
+
+      - "--parallel"
+      - "1"
+
+      - "--jinja"
+
+  hermes:
+    image: nousresearch/hermes-agent:latest
+    container_name: hermes
+    restart: unless-stopped
+
+    depends_on:
+      - llama-cpp
+
+    ports:
+      - "9119:9119"
+
+    shm_size: "1gb"
+
+    environment:
+      HERMES_UID: "${HERMES_UID}"
+      HERMES_GID: "${HERMES_GID}"
+
+      HERMES_DASHBOARD: "1"
+      HERMES_DASHBOARD_HOST: "0.0.0.0"
+      HERMES_DASHBOARD_PORT: "9119"
+
+      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: "${HERMES_DASHBOARD_USERNAME}"
+      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: "${HERMES_DASHBOARD_PASSWORD}"
+      HERMES_DASHBOARD_BASIC_AUTH_SECRET: "${HERMES_DASHBOARD_SECRET}"
+      HERMES_DASHBOARD_PUBLIC_URL: "${HERMES_DASHBOARD_PUBLIC_URL}"
+
+    volumes:
+      - "${HOME}/.hermes:/opt/data"
+      - "${HOME}/hermes-workspace:/opt/data/workspace"
+
+    command:
+      - "gateway"
+      - "run"
+
+volumes:
+  llama-hf-cache:
+    external: true
